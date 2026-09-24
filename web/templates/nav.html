@@ -1,0 +1,13 @@
+{{ define "nav" }}
+<nav class="topbar">
+<a href="/dash/" class="brand">zruvix-cdn</a>
+<span class="links">
+<a href="/dash/">overview</a>
+<a href="/dash/manage">manage</a>
+</span>
+<form method="post" action="/dash/logout" class="logout">
+<input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+<button type="submit" class="linkbtn">log out</button>
+</form>
+</nav>
+{{ end }}

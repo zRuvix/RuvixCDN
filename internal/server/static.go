@@ -23,6 +23,8 @@ func dashStatic() http.Handler {
 		switch rel {
 		case "css/dash.css":
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		case "js/manage.js":
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
 		default:
 			http.NotFound(w, r)
 			return

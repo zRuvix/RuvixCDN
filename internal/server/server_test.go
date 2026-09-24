@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,47 @@ import (
 	"zruvix-cdn/internal/config"
 	"zruvix-cdn/internal/storage"
 )
+
+// loginThroughServer performs the full login flow against the wired router
+// and returns the session cookie value.
+func loginThroughServer(t *testing.T, h http.Handler) string {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/dash/login", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login page = %d", rec.Code)
+	}
+	var csrfCookie string
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "zruvix_login_csrf" {
+			csrfCookie = c.Value
+		}
+	}
+	if csrfCookie == "" {
+		t.Fatalf("no login CSRF cookie")
+	}
+	form := url.Values{
+		"username":   {"admin"},
+		"password":   {"s3cret"},
+		"csrf_token": {csrfCookie},
+		"next":       {"/dash/"},
+	}
+	req := httptest.NewRequest("POST", "/dash/login", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "zruvix_login_csrf", Value: csrfCookie})
+	lrec := httptest.NewRecorder()
+	h.ServeHTTP(lrec, req)
+	if lrec.Code != http.StatusFound {
+		t.Fatalf("login = %d (%q)", lrec.Code, lrec.Body.String())
+	}
+	for _, c := range lrec.Result().Cookies() {
+		if c.Name == "zruvix_session" {
+			return c.Value
+		}
+	}
+	t.Fatalf("no session cookie after login")
+	return ""
+}
 
 func testConfig(t *testing.T) *config.Config {
 	t.Helper()
@@ -108,6 +150,33 @@ func TestDashLoginPageAndStatic(t *testing.T) {
 	}
 	if ct := rec2.Header().Get("Content-Type"); ct != "text/css; charset=utf-8" {
 		t.Errorf("dash.css Content-Type = %q", ct)
+	}
+
+	rec3 := httptest.NewRecorder()
+	h.ServeHTTP(rec3, httptest.NewRequest("GET", "/dash/static/js/manage.js", nil))
+	if rec3.Code != http.StatusOK {
+		t.Fatalf("manage.js = %d", rec3.Code)
+	}
+	if ct := rec3.Header().Get("Content-Type"); ct != "text/javascript; charset=utf-8" {
+		t.Errorf("manage.js Content-Type = %q", ct)
+	}
+	if !strings.Contains(rec3.Body.String(), "XMLHttpRequest") {
+		t.Errorf("manage.js body looks wrong")
+	}
+
+	// Unknown dash paths 404 for logged-in users (never fall through to
+	// the CDN handler). Anonymous requests 302 to login first (RequireAuth
+	// wraps the dispatcher), so log in before checking.
+	session := loginThroughServer(t, h)
+	reqNope := httptest.NewRequest("GET", "/dash/nope", nil)
+	reqNope.AddCookie(&http.Cookie{Name: "zruvix_session", Value: session})
+	rec4 := httptest.NewRecorder()
+	h.ServeHTTP(rec4, reqNope)
+	if rec4.Code != http.StatusNotFound {
+		t.Errorf("/dash/nope = %d, want 404", rec4.Code)
+	}
+	if cc := rec4.Header().Get("Cache-Control"); strings.Contains(cc, "public") {
+		t.Errorf("/dash/nope has CDN Cache-Control header %q", cc)
 	}
 }
 

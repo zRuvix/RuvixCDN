@@ -5,6 +5,7 @@ import (
 
 	"zruvix-cdn/internal/config"
 	"zruvix-cdn/internal/dash"
+	"zruvix-cdn/internal/storage"
 )
 
 // dashHandlers is the dashboard surface the router needs. *dash.Handlers
@@ -15,16 +16,18 @@ type dashHandlers interface {
 	LoginPage(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	Logout(w http.ResponseWriter, r *http.Request)
-	// Overview/Manage are v0.3 pages; in v0.2 they serve placeholders.
 	Overview(w http.ResponseWriter, r *http.Request)
 	Manage(w http.ResponseWriter, r *http.Request)
+	Upload(w http.ResponseWriter, r *http.Request)
+	Delete(w http.ResponseWriter, r *http.Request)
+	Mkdir(w http.ResponseWriter, r *http.Request)
 }
 
-func resolveDash(cfg *config.Config, dh dashHandlers) dashHandlers {
+func resolveDash(cfg *config.Config, store *storage.Store, dh dashHandlers) dashHandlers {
 	if dh != nil {
 		return dh
 	}
-	h, err := dash.New(cfg)
+	h, err := dash.New(cfg, store)
 	if err != nil {
 		// Templates are embedded; failure means a broken build. Fail
 		// closed at startup rather than serving a half-wired dashboard.

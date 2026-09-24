@@ -32,7 +32,7 @@ func newWithDash(cfg *config.Config, store *storage.Store, dh dashHandlers) http
 		w.Write([]byte("ok"))
 	})
 
-	dh = resolveDash(cfg, dh)
+	dh = resolveDash(cfg, store, dh)
 
 	// Public (no session): login page + login POST + embedded static.
 	mux.HandleFunc("/dash/login", func(w http.ResponseWriter, r *http.Request) {
@@ -48,15 +48,26 @@ func newWithDash(cfg *config.Config, store *storage.Store, dh dashHandlers) http
 	})
 	mux.Handle("/dash/static/", dashStatic())
 
+	// Authenticated mutation APIs (POST-only, §2).
+	for path, fn := range map[string]func(http.ResponseWriter, *http.Request){
+		"/dash/api/upload": dh.Upload,
+		"/dash/api/delete": dh.Delete,
+		"/dash/api/mkdir":  dh.Mkdir,
+	} {
+		mux.Handle(path, dh.RequireAuth(http.HandlerFunc(fn)))
+	}
+
 	// Authenticated: everything else under /dash/.
 	authed := dh.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.URL.Path == "/dash/logout" && r.Method == http.MethodPost:
+		case r.URL.Path == "/dash/logout":
 			dh.Logout(w, r)
 		case r.URL.Path == "/dash/" || r.URL.Path == "/dash":
 			dh.Overview(w, r)
-		default:
+		case r.URL.Path == "/dash/manage":
 			dh.Manage(w, r)
+		default:
+			http.NotFound(w, r)
 		}
 	}))
 	mux.Handle("/dash/", authed)

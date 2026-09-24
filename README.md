@@ -14,8 +14,9 @@ openssl rand -base64 32
 make run
 ```
 
-Open `http://localhost:8080/dash/login` (dashboard UI lands in v0.2/v0.3;
-v0.1 serves the public CDN + `/healthz`).
+Open `http://localhost:8080/dash/login`. The dashboard has login,
+overview (`/dash/`), and file management (`/dash/manage` with upload,
+mkdir, delete).
 
 ## Layout
 
@@ -27,7 +28,9 @@ internal/server    router + HTTP timeouts
 internal/middleware recover, realip, logging, secure headers
 internal/storage   path validation, save/delete/list/stats (security critical)
 internal/cdn       public read-only file handler
-web/               embedded templates/static (dashboard, v0.2+)
+internal/auth      session cookie, CSRF, login rate limit
+internal/dash      dashboard pages (overview/manage) + upload/mkdir/delete APIs
+web/               embedded templates/static (dashboard)
 deploy/            systemd unit, deploy script, NPM notes
 ```
 

@@ -1,0 +1,59 @@
+{{ define "manage" }}{{ template "layout" . }}{{ end }}
+{{ define "mgtitle" }}manage — zruvix-cdn{{ end }}
+{{ define "mgcontent" }}
+{{ template "nav" . }}
+<h1>manage</h1>
+{{ if .Flash }}<p class="flash" role="alert">{{ .Flash }}</p>{{ end }}
+<nav class="crumbs" aria-label="breadcrumb">
+{{ range $i, $c := .Crumbs }}{{ if $i }} / {{ end }}<a href="/dash/manage{{ if $c.Dir }}?dir={{ $c.Dir }}{{ end }}">{{ $c.Name }}</a>{{ end }}
+</nav>
+<aside class="sidebar">
+<h2>folders</h2>
+<ul>
+<li><a href="/dash/manage">/ (root)</a></li>
+{{ range .TopDirs }}<li><a href="/dash/manage?dir={{ .Path }}">{{ .Path }}</a></li>{{ end }}
+</ul>
+<form method="post" action="/dash/api/mkdir" class="row">
+<input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
+<input type="hidden" name="dir" value="{{ $.Dir }}">
+<input type="text" name="name" placeholder="new folder" required maxlength="63" pattern="[a-z0-9][a-z0-9_-]*">
+<button type="submit">create</button>
+</form>
+</aside>
+<section>
+<h2>{{ if .Dir }}{{ .Dir }}{{ else }}/{{ end }}</h2>
+<form id="upload" method="post" action="/dash/api/upload" enctype="multipart/form-data" class="card">
+<input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+<input type="hidden" name="dir" value="{{ .Dir }}">
+<input type="file" name="file" multiple required>
+<label class="inline"><input type="checkbox" name="overwrite" value="1"> overwrite existing</label>
+<button type="submit">upload</button>
+</form>
+{{ if .Entries }}
+<table>
+<thead><tr><th></th><th>name</th><th>size</th><th>modified</th><th></th></tr></thead>
+<tbody>
+{{ range .Entries }}
+<tr>
+<td>{{ if .IsDir }}📁{{ else if .IsImage }}<img class="thumb" src="{{ .URL }}" alt="" loading="lazy">{{ else }}📄{{ end }}</td>
+<td class="mono">{{ if .IsDir }}<a href="/dash/manage?dir={{ .Path }}">{{ .Name }}</a>{{ else }}<a href="{{ .URL }}">{{ .Name }}</a>{{ end }}</td>
+<td>{{ if not .IsDir }}{{ humanSize .Size }}{{ end }}</td>
+<td>{{ formatTime .ModTime }}</td>
+<td class="actions">
+{{ if not .IsDir }}<button type="button" data-copy="{{ .URL }}">copy url</button>{{ end }}
+<form method="post" action="/dash/api/delete" class="inline" data-confirm="delete {{ .Name }}?">
+<input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
+<input type="hidden" name="path" value="{{ .Path }}">
+<button type="submit" class="danger">delete</button>
+</form>
+</td>
+</tr>
+{{ end }}
+</tbody>
+</table>
+{{ else }}
+<p class="muted">empty folder.</p>
+{{ end }}
+</section>
+<script src="/dash/static/js/manage.js" defer></script>
+{{ end }}
