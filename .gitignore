@@ -1,0 +1,8 @@
+.env
+*.env
+bin/
+dist/
+data/
+files/
+*.tmp
+*.log

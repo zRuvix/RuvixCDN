@@ -1,0 +1,23 @@
+[Unit]
+Description=zruvix-cdn — dashboard + public CDN
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=zruvix
+Group=zruvix
+ExecStart=/opt/zruvix-cdn/zruvix-cdn
+EnvironmentFile=/etc/zruvix-cdn/env
+Restart=on-failure
+RestartSec=2
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/zruvix-cdn
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
