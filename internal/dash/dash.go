@@ -77,12 +77,14 @@ func New(cfg *config.Config, store *storage.Store) (*Handlers, error) {
 	}, nil
 }
 
-// pageData is passed to every template (§7).
+// pageData is passed to every template (§7). Active selects the pill-nav
+// highlight ("overview"/"manage"); login pages leave it empty (no nav).
 type pageData struct {
 	CSRFToken string
 	PublicURL string
 	Flash     string
 	LoggedIn  bool
+	Active    string
 }
 
 // fileEntry is a storage entry plus its public URL and image flag for
@@ -439,6 +441,7 @@ func (h *Handlers) Overview(w http.ResponseWriter, r *http.Request) {
 			PublicURL: h.cfg.PublicURL,
 			Flash:     r.URL.Query().Get("flash"),
 			LoggedIn:  true,
+			Active:    "overview",
 		},
 		FileCount: st.FileCount,
 		DirCount:  st.DirCount,
@@ -510,6 +513,7 @@ func (h *Handlers) Manage(w http.ResponseWriter, r *http.Request) {
 			PublicURL: h.cfg.PublicURL,
 			Flash:     r.URL.Query().Get("flash"),
 			LoggedIn:  true,
+			Active:    "manage",
 		},
 		Dir:     dir,
 		Crumbs:  crumbs(dir),

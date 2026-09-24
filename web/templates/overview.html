@@ -2,29 +2,28 @@
 {{ define "ovtitle" }}overview — zruvix-cdn{{ end }}
 {{ define "ovcontent" }}
 {{ template "nav" . }}
-<h1>overview</h1>
-{{ if .Flash }}<p class="flash" role="alert">{{ .Flash }}</p>{{ end }}
 <section class="stats">
 <div class="stat"><strong>{{ .FileCount }}</strong><span>files</span></div>
 <div class="stat"><strong>{{ .DirCount }}</strong><span>folders</span></div>
 <div class="stat"><strong>{{ humanSize .TotalSize }}</strong><span>total size</span></div>
 </section>
-<h2>recent uploads</h2>
+{{ if .Flash }}<p class="flash" role="alert">{{ .Flash }}</p>{{ end }}
+<h2 class="sect">recent uploads</h2>
 {{ if .Recent }}
-<table>
+<table class="rows">
 <thead><tr><th>file</th><th>size</th><th>modified</th><th></th></tr></thead>
 <tbody>
 {{ range .Recent }}
 <tr>
 <td class="mono">{{ .Path }}</td>
-<td>{{ humanSize .Size }}</td>
-<td>{{ formatTime .ModTime }}</td>
-<td><button type="button" data-copy="{{ .URL }}">copy url</button></td>
+<td class="num">{{ humanSize .Size }}</td>
+<td class="num">{{ formatTime .ModTime }}</td>
+<td class="actions"><button type="button" class="chip" data-copy="{{ .URL }}">copy url</button></td>
 </tr>
 {{ end }}
 </tbody>
 </table>
 {{ else }}
-<p class="muted">no files yet — head to <a href="/dash/manage">manage</a> to upload.</p>
+<p class="muted">empty — upload from <a href="/dash/manage">manage</a>.</p>
 {{ end }}
 {{ end }}

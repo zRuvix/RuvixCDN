@@ -1,13 +1,10 @@
 {{ define "nav" }}
-<nav class="topbar">
-<a href="/dash/" class="brand">zruvix-cdn</a>
-<span class="links">
-<a href="/dash/">overview</a>
-<a href="/dash/manage">manage</a>
-</span>
-<form method="post" action="/dash/logout" class="logout">
+<nav class="pillbar" aria-label="dashboard">
+<a href="/dash/" class="pill{{ if eq .Active "overview" }} on{{ end }}">overview</a>
+<a href="/dash/manage" class="pill{{ if eq .Active "manage" }} on{{ end }}">manage</a>
+<form method="post" action="/dash/logout" class="pillform">
 <input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
-<button type="submit" class="linkbtn">log out</button>
+<button type="submit" class="pill ghost">log out</button>
 </form>
 </nav>
 {{ end }}
