@@ -1,0 +1,15 @@
+{{ define "title" }}login — zruvix-cdn{{ end }}
+{{ define "content" }}
+<h1>zruvix-cdn</h1>
+{{ if .Flash }}<p class="flash" role="alert">{{ .Flash }}</p>{{ end }}
+<form method="post" action="/dash/login" class="card">
+<input type="hidden" name="csrf_token" value="{{ .CSRFToken }}">
+<label>username
+<input type="text" name="username" autocomplete="username" required autofocus>
+</label>
+<label>password
+<input type="password" name="password" autocomplete="current-password" required>
+</label>
+<button type="submit">log in</button>
+</form>
+{{ end }}

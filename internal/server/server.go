@@ -13,6 +13,12 @@ import (
 // New builds the full route tree. More-specific /dash/ wins over the CDN
 // catch-all / by ServeMux specificity, not registration order.
 func New(cfg *config.Config, store *storage.Store) http.Handler {
+	return newWithDash(cfg, store, nil)
+}
+
+// newWithDash wires the router; tests inject dash handlers, production
+// builds the real ones. A nil dh builds the real dashboard.
+func newWithDash(cfg *config.Config, store *storage.Store, dh dashHandlers) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -26,16 +32,34 @@ func New(cfg *config.Config, store *storage.Store) http.Handler {
 		w.Write([]byte("ok"))
 	})
 
-	// v0.1 dash stub: redirect to the future login page so the routing
-	// contract (§2: unauthenticated /dash/* → 302 /dash/login) holds now.
-	// Real dashboard lands in v0.2/v0.3.
-	mux.Handle("/dash/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/dash/login", http.StatusFound)
+	dh = resolveDash(cfg, dh)
+
+	// Public (no session): login page + login POST + embedded static.
+	mux.HandleFunc("/dash/login", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			dh.LoginPage(w, r)
+		case http.MethodPost:
+			dh.Login(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST")
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+	mux.Handle("/dash/static/", dashStatic())
+
+	// Authenticated: everything else under /dash/.
+	authed := dh.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/dash/logout" && r.Method == http.MethodPost:
+			dh.Logout(w, r)
+		case r.URL.Path == "/dash/" || r.URL.Path == "/dash":
+			dh.Overview(w, r)
+		default:
+			dh.Manage(w, r)
+		}
 	}))
-	mux.Handle("/dash/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("login — coming in v0.2"))
-	}))
+	mux.Handle("/dash/", authed)
 
 	cdnHandler := cdn.New(store, cfg.CacheMaxAge)
 	mux.Handle("/", cdnHandler)

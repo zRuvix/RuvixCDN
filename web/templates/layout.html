@@ -1,0 +1,14 @@
+{{ define "layout" }}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ block "title" . }}zruvix-cdn{{ end }}</title>
+<link rel="stylesheet" href="/dash/static/css/dash.css">
+</head>
+<body>
+<main class="wrap">
+{{ block "content" . }}{{ end }}
+</main>
+</body>
+</html>{{ end }}
